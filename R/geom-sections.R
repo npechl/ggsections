@@ -1,14 +1,15 @@
 
 #' @keywords internal
+#' @importFrom ggplot2 Geom draw_key_blank
 GeomSections <- ggplot2::ggproto(
   "GeomSections",
-  ggplot2::Geom,
+  Geom,
 
   required_aes = character(0),
 
   default_aes = ggplot2::aes(),
 
-  draw_key = ggplot2::draw_key_blank,
+  draw_key = draw_key_blank,
 
   draw_panel = function(
     data, panel_params, coord,
