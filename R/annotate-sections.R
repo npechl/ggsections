@@ -1,18 +1,22 @@
 
-#' Colour regions of a ggplot panel
+#' Annotate rectangular background sections
+#'
+#' Divide the plotting panel into two or four
+#' coloured sections using explicit cutoffs.
 #'
 #' @param x_cutoff Optional numeric x cutoff.
 #' @param y_cutoff Optional numeric y cutoff.
-#' @param fill Vector of two or four colours.
-#' @param alpha Background opacity, between 0 and 1.
-#' @param show_lines Draw cutoff lines?
-#' @param line_colour Cutoff line colour.
-#' @param line_width Cutoff line width in mm.
-#' @param line_type Cutoff line type.
+#' @param fill Two or four background colours.
+#' @param alpha Background opacity (0 to 1).
+#' @param show_lines Draw dividing lines?
+#' @param line_colour Dividing line colour.
+#' @param line_width Dividing line width in mm.
+#' @param line_type Dividing line type.
 #'
 #' @return A ggplot2 layer.
+#'
 #' @export
-annotate_sections  <- function(
+annotate_sections <- function(
   x_cutoff = NULL,
   y_cutoff = NULL,
   fill = NULL,
@@ -22,11 +26,21 @@ annotate_sections  <- function(
   line_width = 0.5,
   line_type = "dashed"
 ) {
-  validate_regions(
-    x_cutoff, y_cutoff, fill, alpha,
-    line_width, line_colour, line_type,
-    show_lines
+  validate_cutoff(x_cutoff, "x_cutoff")
+  validate_cutoff(y_cutoff, "y_cutoff")
+  validate_alpha(alpha)
+
+  validate_lines(
+    show_lines, line_colour,
+    line_width, line_type
   )
+
+  if (is.null(x_cutoff) && is.null(y_cutoff)) {
+    stop(
+      "Supply x_cutoff, y_cutoff, or both.",
+      call. = FALSE
+    )
+  }
 
   n <- if (
     !is.null(x_cutoff) &&
@@ -35,18 +49,24 @@ annotate_sections  <- function(
 
   if (is.null(fill)) {
     fill <- if (n == 4L) {
-      c("#F9D5D3", "#D6EAF8",
-        "#FCF3CF", "#D5F5E3")
+      c(
+        "#F9D5D3",
+        "#D6EAF8",
+        "#FCF3CF",
+        "#D5F5E3"
+      )
     } else {
       c("#F9D5D3", "#D6EAF8")
     }
   }
 
+  validate_colours(fill, n)
+
   ggplot2::layer(
-    data = data.frame(.region = 1L),
+    data = data.frame(.section = 1L),
     mapping = NULL,
     stat = "identity",
-    geom = GeomSections,
+    geom = GeomAnnotationsections,
     position = "identity",
     inherit.aes = FALSE,
     show.legend = FALSE,
@@ -62,3 +82,48 @@ annotate_sections  <- function(
     )
   )
 }
+
+# Internal geom for explicit section annotations
+GeomAnnotationsections <- ggplot2::ggproto(
+  "GeomAnnotationsections",
+  ggplot2::Geom,
+
+  required_aes = character(0),
+
+  default_aes = ggplot2::aes(),
+
+  draw_key = ggplot2::draw_key_blank,
+
+  draw_panel = function(
+    data, panel_params, coord,
+    x_cutoff = NULL,
+    y_cutoff = NULL,
+    fill,
+    alpha = 0.2,
+    show_lines = FALSE,
+    line_colour = "grey40",
+    line_width = 0.5,
+    line_type = "dashed"
+  ) {
+    check_sections_coord(coord)
+
+    x_pos <- panel_cutoff(
+      x_cutoff, "x", coord, panel_params
+    )
+
+    y_pos <- panel_cutoff(
+      y_cutoff, "y", coord, panel_params
+    )
+
+    draw_section_grob(
+      x_cutoff = x_pos,
+      y_cutoff = y_pos,
+      fill = fill,
+      alpha = alpha,
+      show_lines = show_lines,
+      line_colour = line_colour,
+      line_width = line_width,
+      line_type = line_type
+    )
+  }
+)

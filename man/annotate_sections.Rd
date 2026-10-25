@@ -2,7 +2,7 @@
 % Please edit documentation in R/annotate-sections.R
 \name{annotate_sections}
 \alias{annotate_sections}
-\title{Colour regions of a ggplot panel}
+\title{Annotate rectangular background sections}
 \usage{
 annotate_sections(
   x_cutoff = NULL,
@@ -20,21 +20,22 @@ annotate_sections(
 
 \item{y_cutoff}{Optional numeric y cutoff.}
 
-\item{fill}{Vector of two or four colours.}
+\item{fill}{Two or four background colours.}
 
-\item{alpha}{Background opacity, between 0 and 1.}
+\item{alpha}{Background opacity (0 to 1).}
 
-\item{show_lines}{Draw cutoff lines?}
+\item{show_lines}{Draw dividing lines?}
 
-\item{line_colour}{Cutoff line colour.}
+\item{line_colour}{Dividing line colour.}
 
-\item{line_width}{Cutoff line width in mm.}
+\item{line_width}{Dividing line width in mm.}
 
-\item{line_type}{Cutoff line type.}
+\item{line_type}{Dividing line type.}
 }
 \value{
 A ggplot2 layer.
 }
 \description{
-Colour regions of a ggplot panel
+Divide the plotting panel into two or four
+coloured sections using explicit cutoffs.
 }
