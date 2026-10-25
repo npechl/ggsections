@@ -142,6 +142,12 @@ panel_cutoff <- function(
     value, panel_params
   )
 
+  # coord_flip() moves data x onto the panel's y
+  # axis and vice versa
+  if (inherits(coord, "CoordFlip")) {
+    axis <- setdiff(c("x", "y"), axis)
+  }
+
   position <- transformed[[axis]][1]
 
   if (!is.finite(position)) {
@@ -153,4 +159,32 @@ panel_cutoff <- function(
   }
 
   max(0, min(1, position))
+}
+
+# Convert data-space cutoffs to panel positions.
+#
+# Fills arrive in data order (bottom-left,
+# bottom-right, top-left, top-right). Under
+# coord_flip() the axes swap, so the cutoffs swap
+# and the off-diagonal quadrants trade places.
+section_positions <- function(
+  x_cutoff, y_cutoff, fill, coord, panel_params
+) {
+  x_pos <- panel_cutoff(
+    x_cutoff, "x", coord, panel_params
+  )
+
+  y_pos <- panel_cutoff(
+    y_cutoff, "y", coord, panel_params
+  )
+
+  if (!inherits(coord, "CoordFlip")) {
+    return(list(x = x_pos, y = y_pos, fill = fill))
+  }
+
+  if (length(fill) == 4L) {
+    fill <- fill[c(1L, 3L, 2L, 4L)]
+  }
+
+  list(x = y_pos, y = x_pos, fill = fill)
 }

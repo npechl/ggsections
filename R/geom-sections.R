@@ -92,89 +92,32 @@ Geomsections <- ggplot2::ggproto(
       return(grid::nullGrob())
     }
 
-    # Remove missing observations
-    valid <- is.finite(data$x) &
-      is.finite(data$y) &
-      !is.na(data$fill) &
-      !is.na(data$group)
-
-    if (!all(valid)) {
-      if (!na.rm) {
-        warning(
-          "Removed ", sum(!valid),
-          " observations with missing values.",
-          call. = FALSE
-        )
-      }
-
-      data <- data[valid, , drop = FALSE]
-    }
+    # Drop non-finite positions (handle_na only removes NA)
+    data <- data[
+      is.finite(data$x) & is.finite(data$y), ,
+      drop = FALSE
+    ]
 
     if (nrow(data) == 0L) {
       return(grid::nullGrob())
     }
 
-    # Convert ggplot2's group IDs to characters
-    group_ids <- as.character(data$group)
-
-    # Ensure each group has exactly one fill colour
-    fill_by_group <- split(
-      data$fill, group_ids
-    )
-
-    consistent <- vapply(
-      fill_by_group,
-      function(x) length(unique(x)) == 1L,
-      logical(1)
-    )
-
-    if (!all(consistent)) {
-      stop(
-        "Each group must have exactly one ",
-        "fill colour.",
-        call. = FALSE
-      )
-    }
-
-    group_colours <- vapply(
-      fill_by_group,
-      function(x) unique(x)[1],
-      character(1)
-    )
-
-    # Compute cutoffs using the input coordinates
-    section_data <- data.frame(
-      x = data$x,
-      y = data$y,
-      group = group_ids
-    )
-
+    # Sections are defined by fill colour, not ggplot2's
+    # group, which also splits on other discrete aesthetics
     sections <- compute_sections(
-      section_data,
+      data.frame(x = data$x, y = data$y, group = data$fill),
       orientation = orientation
     )
 
-    # Match colours to the spatial section order
-    fills <- unname(
-      group_colours[sections$groups]
+    pos <- section_positions(
+      sections$x_cutoff, sections$y_cutoff,
+      sections$groups, coord, panel_params
     )
 
-    # Convert cutoffs to panel coordinates
-    x_pos <- panel_cutoff(
-      sections$x_cutoff,
-      "x", coord, panel_params
-    )
-
-    y_pos <- panel_cutoff(
-      sections$y_cutoff,
-      "y", coord, panel_params
-    )
-
-    # Draw sections using the shared renderer
     draw_section_grob(
-      x_cutoff = x_pos,
-      y_cutoff = y_pos,
-      fill = fills,
+      x_cutoff = pos$x,
+      y_cutoff = pos$y,
+      fill = pos$fill,
       alpha = alpha,
       show_lines = show_lines,
       line_colour = line_colour,

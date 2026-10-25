@@ -64,15 +64,19 @@ annotate_sections <- function(
 
   ggplot2::layer(
     data = data.frame(.section = 1L),
-    mapping = NULL,
+    # Mapped (not passed as params) so scale
+    # transformations apply, as in geom_vline().
+    # NULL cutoffs are dropped from the mapping.
+    mapping = ggplot2::aes(
+      xintercept = !!x_cutoff,
+      yintercept = !!y_cutoff
+    ),
     stat = "identity",
     geom = GeomAnnotationsections,
     position = "identity",
     inherit.aes = FALSE,
     show.legend = FALSE,
     params = list(
-      x_cutoff = x_cutoff,
-      y_cutoff = y_cutoff,
       fill = fill,
       alpha = alpha,
       show_lines = show_lines,
@@ -90,14 +94,15 @@ GeomAnnotationsections <- ggplot2::ggproto(
 
   required_aes = character(0),
 
-  default_aes = ggplot2::aes(),
+  default_aes = ggplot2::aes(
+    xintercept = NA_real_,
+    yintercept = NA_real_
+  ),
 
   draw_key = ggplot2::draw_key_blank,
 
   draw_panel = function(
     data, panel_params, coord,
-    x_cutoff = NULL,
-    y_cutoff = NULL,
     fill,
     alpha = 0.2,
     show_lines = FALSE,
@@ -107,18 +112,20 @@ GeomAnnotationsections <- ggplot2::ggproto(
   ) {
     check_sections_coord(coord)
 
-    x_pos <- panel_cutoff(
-      x_cutoff, "x", coord, panel_params
-    )
+    # Cutoffs are now in transformed scale space
+    x_cutoff <- data$xintercept[1]
+    y_cutoff <- data$yintercept[1]
 
-    y_pos <- panel_cutoff(
-      y_cutoff, "y", coord, panel_params
+    pos <- section_positions(
+      if (is.na(x_cutoff)) NULL else x_cutoff,
+      if (is.na(y_cutoff)) NULL else y_cutoff,
+      fill, coord, panel_params
     )
 
     draw_section_grob(
-      x_cutoff = x_pos,
-      y_cutoff = y_pos,
-      fill = fill,
+      x_cutoff = pos$x,
+      y_cutoff = pos$y,
+      fill = pos$fill,
       alpha = alpha,
       show_lines = show_lines,
       line_colour = line_colour,
